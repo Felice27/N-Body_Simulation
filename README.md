@@ -6,9 +6,9 @@ The contents of this repository are intended to satisfy the requirements for the
 
 The purpose of this project is to implement a physics-based code for the generalized 3-body problem: 3 masses under mutual gravitational attraction.  In general, the motion of each body is governed by:
 
-$$ \displaystyle
+$$ 
 
-    \ddot{\mathbf{r}}_i = \sum_{j=1,i \neq j}^N \frac{G m_j \left(\mathbf{r}_j - \mathbf{r}_i \right)}{|| \mathbf{r}_j - \mathbf{r}_i||^3}
+\ddot{\mathbf{r}}_i = \sum_{j=1,i \neq j}^N \frac{G m_j \left(\mathbf{r}_j - \mathbf{r}_i \right)}{|| \mathbf{r}_j - \mathbf{r}_i||^3}
 
 $$
 
