@@ -7,9 +7,7 @@ The contents of this repository are intended to satisfy the requirements for the
 The purpose of this project is to implement a physics-based code for the generalized 3-body problem: 3 masses under mutual gravitational attraction.  In general, the motion of each body is governed by:
 
 $$ 
-
 \ddot{\mathbf{r}}_i = \sum_{j=1,i \neq j}^N \frac{G m_j \left(\mathbf{r}_j - \mathbf{r}_i \right)}{|| \mathbf{r}_j - \mathbf{r}_i||^3}
-
 $$
 
 (Note the distinction between the vector $\mathbf{r}$ and the scalar $r$).  For the case of the 3-body problem, this gives 3 second-order differential equations:
@@ -35,7 +33,7 @@ This project is intended to be completed in Python with interactive Jupyter note
 - [x] Make classes for mass objects
 - [ ] Investigate ways to parallelize calculations (e.g. matrix operations)
 - [ ] Make YAML / requirements.txt file for necessary Python environment to run code locally
-- [ ] Implement animations for solutions of motion
+- [x] Implement animations for solutions of motion
 - [ ] Check solutions of motion against special cases of the 3 body problem
 - [ ] Investigate scaleability improvements (e.g. NJIT, Cython)
 - [ ] Convert to center-of-mass frame so that motion is visible at all times
