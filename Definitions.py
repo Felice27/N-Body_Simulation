@@ -81,5 +81,97 @@ class Mass:
     ### TODO: Implement using differential equation solver, such as scipy.integrate
     ### TODO: Implement Kinetic and Potential Energy calculations to check conservation of energy
     
+class OrbitSolver:
+    """
+    Class to solve the n-body problem.  Uses the "Leapfrog" kick-drift-kick algorithm to solve the equations of motion.
+
+    Attributes
+    ----------
+    G : float
+        Gravitational constant
+    M : array
+        Array of masses
+    R0 : array
+        Array of initial positions
+    V0 : array
+        Array of initial velocities
+    t_start : float
+        Start time
+    t_end : float
+        End time
+    dt : float
+        Time step
+    N : int
+        Number of bodies
+    T : array
+        Array of time steps
+    eps: float
+        Small number to avoid division by zero.  Default 1e-2 for numerical stability.
+
+    Methods 
+    -------
+    solve()
+        Solve the n-body problem using the Leapfrog algorithm. Returns the positions, velocities, kinetic energy, and potential energy of the system at each time step.
+    """
+    def __init__(self, G, M, R0, V0, t_start, t_end, dt, eps):
+        self.G = G
+        self.M = M
+        self.R0 = R0
+        self.V0 = V0
+        self.t_start = t_start
+        self.t_end = t_end
+        self.dt = dt
+        self.N = len(M)
+        self.T = np.arange(t_start, t_end, dt)
+        self.eps = eps
+    def solve(self):
+        """
+        Solve the n-body problem using the Leapfrog algorithm
+        """
+        # Initialize arrays to store positions, velocities, kinetic energy, and potential energy
+        R = np.zeros((self.N, 2, len(self.T)))
+        V = np.zeros((self.N, 2, len(self.T)))
+        KE = np.zeros(len(self.T))
+        KE[0] = 0.5*np.sum(self.M*np.linalg.norm(self.V0, axis=1)**2)
+        PE = np.zeros(len(self.T))
+        PE[0] = self.potential_energy(self.R0)
+        # Initialize the first time step
+        R[:, :, 0] = self.R0
+        V[:, :, 0] = self.V0
+        # Loop over time steps
+        for i in range(1, len(self.T)):
+            # "Kick" step
+            A_i = self.acceleration(R[:, :, i-1])
+            V_half = V[:, :, i-1] + 0.5*self.dt*A_i
+            # "Drift" step
+            R[:, :, i] = R[:, :, i-1] + self.dt*V_half
+            # "Kick" step
+            A_i_1 = self.acceleration(R[:, :, i])
+            V[:, :, i] = V_half + 0.5*self.dt*A_i_1
+            # Calculate kinetic and potential energy
+            KE[i] = 0.5*np.sum(self.M*np.linalg.norm(V[:, :, i], axis=1)**2)
+            PE[i] = self.potential_energy(R[:, :, i])
+        return R, V, KE, PE
+    def acceleration(self, R):
+        """
+        Calculate the acceleration of the system at a given time step
+        """
+        A = np.zeros((self.N, 2))
+        for i in range(self.N):
+            for j in range(self.N):
+                if i != j:
+                    A[i] += self.G*self.M[j]*(R[j] - R[i])/(np.linalg.norm(R[j] - R[i])**3+self.eps)
+        return A
+    def potential_energy(self, R):
+        """
+        Calculate the potential energy of the system at a given time step
+        """
+        PE = 0
+        for i in range(self.N):
+            for j in range(self.N):
+                if i != j:
+                    PE += -self.G*self.M[i]*self.M[j]/(np.linalg.norm(R[j] - R[i])+self.eps)
+        return PE/2 # Divide by 2 to avoid double counting of each interaction
+   
     
     
