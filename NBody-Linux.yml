@@ -1,4 +1,4 @@
-name: NBody-Linux
+name: NBody
 channels:
   - defaults
   - conda-forge
