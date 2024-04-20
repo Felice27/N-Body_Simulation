@@ -1,3 +1,5 @@
+name:
+  NBody
 channels:
   - defaults
   - conda-forge
