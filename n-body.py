@@ -1,168 +1,149 @@
 import numpy as np
+import matplotlib
 import matplotlib.pyplot as plt
 import matplotlib.animation as animation
 import time
-import ffmpeg
-
-from Definitions import OrbitSolver
-
-# Change global figsize to 10x7
-plt.rcParams['figure.figsize'] = (10, 7)
-print("""
- .----------------.  .----------------.  .----------------.  .----------------.  .----------------. 
-| .--------------. || .--------------. || .--------------. || .--------------. || .--------------. |
-| |    ______    | || |   ______     | || |     ____     | || |  ________    | || |  ____  ____  | |
-| |   / ____ `.  | || |  |_   _ \    | || |   .'    `.   | || | |_   ___ `.  | || | |_  _||_  _| | |
-| |   `'  __) |  | || |    | |_) |   | || |  /  .--.  \  | || |   | |   `. \ | || |   \ \  / /   | |
-| |   _  |__ '.  | || |    |  __'.   | || |  | |    | |  | || |   | |    | | | || |    \ \/ /    | |
-| |  | \____) |  | || |   _| |__) |  | || |  \  `--'  /  | || |  _| |___.' / | || |    _|  |_    | |
-| |   \______.'  | || |  |_______/   | || |   `.____.'   | || | |________.'  | || |   |______|   | |
-| |              | || |              | || |              | || |              | || |              | |
-| '--------------' || '--------------' || '--------------' || '--------------' || '--------------' |
- '----------------'  '----------------'  '----------------'  '----------------'  '----------------' """)
-print("Welcome to the N-Body Simulation!")
+import ffmpeg # Writer for saving animations to .mp4 file.  Pylance and the like may think this variable is unused, but it is necessary for saving animations.
+import os
+import multiprocessing
+from Definitions import *
 
 
-# Constants
-G = 1 # Gravitational constant
-N = 10 # Number of bodies
-# Time 
-t_start = 0
-t_end = 10
-dt = 0.01
+if __name__ == '__main__': # Must be in the main block to allow for multiprocessing
+    # Report number of available threads
+    num_threads = os.cpu_count()
+    print("Number of available threads:", num_threads),
+    if num_threads == 1:
+        print("Will not be able to use multithreading to speed up animation generation.  Animation will not generate until figures have been closed.")
+    else:
+        print("Multithreading available.  Animation will generate in the background.")
 
-# Softening parameter
-eps = 1e-2
-
-while True:
-    # Display options to the user
-    print("Choose a variable to change:")
-    print(f"1. G: {G}")
-    print(f"2. N: {N}")
-    print(f"3. t_start: {t_start}")
-    print(f"4. t_end: {t_end}")
-    print(f"5. dt: {dt}")
-    print("0. Run simulation with current parameters")
-
-    # Get user input
-    choice = input("Enter your choice: ")
-
-    # Check if the user wants to exit
-    if choice == '0':
-        print("Exiting program.")
-        break
-
-    # Convert choice to integer
-    choice = int(choice)
+    if not os.path.exists("Results"):
+        os.makedirs("Results")
 
 
-    # Use match statement to update the corresponding variable based on the user's choice
-    match choice:
-        case 1:
-            G = float(input("Enter the new value for G: "))
-            print(f"Updated value of G: {G}")
-        case 2:
-            N = int(input("Enter the new value for N: "))
-            print(f"Updated value of N: {N}")
-        case 3:
-            t_start = float(input("Enter the new value for t_start: "))
-            print(f"Updated value of t_start: {t_start}")
-        case 4:
-            t_end = float(input("Enter the new value for t_end: "))
-            print(f"Updated value of t_end: {t_end}")
-        case 5:
-            dt = float(input("Enter the new value for dt: "))
-            print(f"Updated value of dt: {dt}")
-        case _:
-            print("Invalid choice. Please enter 1-5 to change parameters, or 0 to exit.")
-M = np.random.rand(N) # Masses
-R = np.random.rand(N, 2) # Initial positions in 2D
-V = np.random.rand(N, 2) # Initial velocities in 2D
-# Convert to center-of-mass frame to prevent drift
-R_com = np.sum(M[:, np.newaxis]*R, axis=0)/np.sum(M)
-V_com = np.sum(M[:, np.newaxis]*V, axis=0)/np.sum(M)
-V -= V_com
-R -= R_com
-#Check that the center of mass is at rest
-print("Center of mass velocity:", np.sum(M[:, np.newaxis]*V, axis=0)/np.sum(M)) 
-
-# Debugging: set initial positions and velocities to known values, vertices of equilateral triangle with velocities tangent to circle
-# R = np.array([[0, 0], [1, 0], [0.5, np.sqrt(3)/2]])
-# V = 0.05 * np.array([[-1/np.sqrt(2), 1/np.sqrt(2)], [-1/np.sqrt(2), -1/np.sqrt(2)], [1, 0]])
-# 
+    # Change global figsize to 10x7
+    plt.rcParams['figure.figsize'] = (10, 7)
+    print(NBody)
+    print("Welcome to the N-Body Simulation! Originally written by Jack Felice in fulfillment of the final project requirement for OSU Physics 5810: Computational Physics.")
 
 
-t0 = time.time()
-# Initialize the solver
-solver = OrbitSolver(G, M, R, V, t_start, t_end, dt, eps)
-print("Solving...")
-R, V, KE, PE = solver.solve()
-t1 = time.time()
-print("Motion solved after", t1-t0, "seconds")
+    # Constants
+    G = 1.0 # Gravitational constant
+    N = 10 # Number of bodies
+    # Time 
+    t_start = 0.0
+    t_end = 10.0
+    dt = 0.01
+    seed = 42
 
-# Plot the positions of the bodies
-print("Animating...")
-fig, ax = plt.subplots()
-x_min = np.min(R[:, 0, :])
-x_max = np.max(R[:, 0, :])
-ax.set_xlim(x_min, x_max)
-y_min = np.min(R[:, 1, :])
-y_max = np.max(R[:, 1, :])
-ax.set_ylim(y_min, y_max)
-lines = [ax.plot([], [], 'o')[0] for i in range(N)]
-def init():
-    for line in lines:
-        line.set_data([], [])
-    return lines
-def animate(i):
-    for j, line in enumerate(lines):
-        line.set_data(R[j, 0, i], R[j, 1, i])
-    return lines
-ani = animation.FuncAnimation(fig, animate, frames=len(solver.T), init_func=init, blit=True, interval=dt*1000, repeat=True) # Set the interval to the time step in milliseconds
-t2 = time.time()
-print("Animation done after", t2-t1, "seconds")
-# Save the animation to a file
-print("Saving animation...")
-#ani.save('n-body.mp4', writer='ffmpeg', fps=1/dt)
-t3 = time.time()
-print("Animation saved after", t3-t2, "seconds")
-plt.show()
-#Debug: plot the inital positions and acceleration vectors
-# fig, ax = plt.subplots()
-# ax.set_xlim(0, 1)
-# ax.set_ylim(0, 1)
-# print("Initial positions:", R[:, :, 0])
-# print("Initial velocities:", V[:, :, 0])
-# print("Initial accelerations:", solver.acceleration(R[:, :, 0]))
-# for i in range(N):
-#     ax.plot(R[i, 0, 0], R[i, 1, 0], 'o')
-#     ax.arrow(R[i, 0, 0], R[i, 1, 0], solver.acceleration(R[:, :, 0])[i, 0]/10, solver.acceleration(R[:, :, 0])[i, 1]/10)
-# plt.show()
-# Plot the kinetic and potential energy of the system over time
-fig, ax = plt.subplots()
-ax.plot(solver.T, KE, label='Kinetic Energy')
-ax.plot(solver.T, PE, label='Potential Energy')
-ax.plot(solver.T, KE + PE, label='Total Energy')
-ax.set_xlabel('Time')
-ax.set_ylabel('Energy')
-ax.legend()
-plt.show()
-# Additional validation: plot the motion of the center of mass over time, should be a straight line
-COM = np.zeros((2, len(solver.T)))
-for i in range(len(solver.T)):
-    COM[:, i] = np.sum(M[:, np.newaxis]*R[:, :, i], axis=0)/np.sum(M)
-fig = plt.figure(figsize=(20,7))
-ax1 = fig.add_subplot(1,2,1)
-ax2 = fig.add_subplot(1,2,2)
-ax1.plot(solver.T, COM[0])
-ax1.set_xlabel('Time')
-ax1.set_ylabel('x')
-ax1.set_title('Center of Mass x Motion')
-ax1.set_ylim(-1, 1)
-ax2.plot(solver.T, COM[1])
-ax2.set_xlabel('Time')
-ax2.set_ylabel('y')
-ax2.set_title('Center of Mass y Motion')
-ax2.set_ylim(-1, 1)
-fig.tight_layout()
-plt.show()
+    # Softening parameter
+    eps = 1e-2
+
+    # Maximum components for random mass, position, and velocity generation
+    M_max = 1.0
+    R_max = 1.0
+    V_max = 1.0
+
+    # Variable to track whether the user wants to compile the program using Numba's JIT compiler
+    compiled = 0
+
+    # Take user input for all parameters
+    G, N, t_start, t_end, dt, eps, seed, M_max, R_max, V_max, compiled = user_input_loop(G, N, t_start, t_end, dt, eps, seed, M_max, R_max, V_max, compiled)
+
+    # Seed the random number generator for reproducibility
+    np.random.seed(seed)
+    M = np.random.uniform(0, M_max, N) # Random masses
+    R = np.random.uniform(-R_max, R_max, (N, 2)) # Random positions in 2D
+    V =  np.random.uniform(-V_max, V_max, (N, 2)) # Random velocities in 2D
+
+    # Convert to center-of-mass frame to prevent drift
+    R_com = np.sum(M[:, np.newaxis]*R, axis=0)/np.sum(M)
+    V_com = np.sum(M[:, np.newaxis]*V, axis=0)/np.sum(M)
+    V -= V_com
+    R -= R_com
+    #Check that the center of mass is at rest (within numerical error)
+    print("Center of mass velocity:", np.sum(M[:, np.newaxis]*V, axis=0)/np.sum(M)) 
+
+
+    t0 = time.time()
+    # Initialize the solver
+    class_args = (G, M, R, V, t_start, t_end, dt, eps)
+    if compiled:
+        solver = CompiledOrbitSolver(*class_args)
+    else:  
+        solver = OrbitSolver(*class_args)
+    print("Solving...")
+    R, V, KE, PE = solver.solve()
+    t1 = time.time()
+    print("Motion solved after", t1-t0, "seconds")
+
+    print("Which plots would you like to see? Set 0 for no, 1 for yes.")
+    show_animation = 1
+    show_energy = 1
+    show_com = 1
+    save_plots = 0
+    while True:
+        print(f"1. Animation: {show_animation}")
+        print(f"2. Energy: {show_energy}")
+        print(f"3. Center of Mass: {show_com}")
+        print(f"4. Save plots: {save_plots}")
+        print("0. Continue")
+        choice = input("Enter your choice: ")
+        try:
+            choice = int(choice)
+        except ValueError:
+            print("Invalid choice. Please enter a valid integer from 0-3.")
+            continue
+        if choice == 0:
+            break
+        match choice:
+            case 1:
+                show_animation = int(input("Enter 1 to show the animation, 0 to hide it: "))
+            case 2:
+                show_energy = int(input("Enter 1 to show the energy plot, 0 to hide it: "))
+            case 3:
+                show_com = int(input("Enter 1 to show the center of mass plot, 0 to hide it: "))
+            case 4:
+                save_plots = int(input("Enter 1 to save the plots, 0 to not save them: "))
+            case _:
+                print("Invalid choice. Please enter 1-3 to change parameters, or 0 to continue.")
+
+    if save_plots:
+        subdir = f"{N}-body_G={G},t_start={t_start},t_end={t_end},dt={dt},eps={eps},M_max={M_max},R_max={R_max},V_max={V_max},seed={seed}"
+        if os.path.exists(f"Results/{subdir}"):
+            print("Directory already exists. Overwriting...")
+        os.makedirs(f"Results/{subdir}", exist_ok=True)
+
+
+
+
+    while True:
+        trails = input("Would you like to see trails of the bodies? Set 0 for no, 1 for yes.")
+        try:
+            trails = int(trails)
+        except ValueError:
+            print("Invalid choice. Please enter 0 or 1.")
+            continue
+        if trails == 0 or trails == 1:
+            break
+        else:
+            print("Invalid choice. Please enter 0 or 1.")
+
+
+    if save_plots: # Allow the animation to be saved in parallel with the plots being shown, as the animation rendering takes the longest time (especially if compiled!)
+        if num_threads >= 2:
+            # Create and start the threads
+            show_thread = multiprocessing.Process(target=make_plots, args=(R, M, N, KE, PE, solver, dt, trails, show_animation, show_energy, show_com, save_plots, subdir))
+            save_thread = multiprocessing.Process(target=save_anim, args=(R, M, N, solver, subdir, dt, trails, show_animation))
+            show_thread.start()
+            save_thread.start()
+            show_thread.join()
+            save_thread.join()
+        else:
+            # If only one thread available, run sequentially
+            make_plots(R, M, N, KE, PE, solver, dt, trails, show_animation, show_energy , show_com, save_plots, subdir)
+            save_anim(R, M, N, solver, subdir, dt, trails, show_animation)
+    else:
+        subdir = "temp" # should never be created, assuming not(True) is False
+        make_plots(R, M, N, KE, PE, solver, dt, trails, show_animation, show_energy, show_com, save_plots, subdir)
