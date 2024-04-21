@@ -101,12 +101,15 @@ In response to feedback on my initial attempt, I have made a few changes to the 
 The first was to properly implement the gravitational potential to be conservative: that is, for any interaction between two masses i and j, the contribution to potential energy is given by:
 
 $$
-U = -\frac{G m_i m_j}{\sqrt{r_{ij}^2 + \epsilon^2}}, \text{where } r_{ij} = ||\mathbf{r}_{ij}|| = ||\mathbf{r}_j - \mathbf{r}_i||
+U = -\frac{G m_i m_j}{\sqrt{r_{ij}^2 + \epsilon^2}}, \text{where } r_{ij} = ||\mathbf{r}_{ij}|| = ||\mathbf{r}\_j - \mathbf{r}\_i||
 $$
+
 As the force is the negative gradient of the potential, this means that the force on mass $i$ due to mass $j$ is given as follows:
+
 $$
-\mathbf{F}_{ij} = \frac{G m_i m_j \cdot \mathbf{r}_{ij}}{\left({r_{ij}^2 + \epsilon^2}\right)^{3/2}}
+\mathbf{F}_{ij} = \frac{G m_i m_j \cdot \mathbf{r}_{ij}}{\left({r\_{ij}^2 + \epsilon^2}\right)^{3/2}}
 $$
+
 This vector field is properly conservative and, given the right choices for $\epsilon$ and the time step $\Delta t$, will exhibit conservation of energy.  An example of such a plot generated during a run of "validation.py" is shown:
 
 ![A plot with two subplots, one showing the kinetic and potential energy oscillating to conserve total energy, and one showing the relative error in energy vs time as an n-body simulation runs.  The relative error increases up to a maximum error, where it oscillates under that bound potential indefinitely.](/Figures/energy.png?raw=true "Energy Error Plot")
