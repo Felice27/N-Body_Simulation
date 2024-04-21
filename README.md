@@ -47,7 +47,7 @@ conda env create -f NBody-Linux.yml
 ```
 Following the subsquent installation process will create an environment called "NBody" that has all the required packages.  Then, activate the environment:
 ```
-conda activate NBody-Linux
+conda activate NBody
 ```
 
 For Mac OS X:
