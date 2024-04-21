@@ -107,7 +107,7 @@ $$
 As the force is the negative gradient of the potential, this means that the force on mass $i$ due to mass $j$ is given as follows:
 
 $$
-\mathbf{F}_{ij} = \frac{G m_i m_j \cdot \mathbf{r}_{ij}}{\left({r\_{ij}^2 + \epsilon^2}\right)^{3/2}}
+\mathbf{F}\_{ij} = \frac{G m_i m_j \cdot \mathbf{r}\_{ij}}{\left({r\_{ij}^2 + \epsilon^2}\right)^{3/2}}
 $$
 
 This vector field is properly conservative and, given the right choices for $\epsilon$ and the time step $\Delta t$, will exhibit conservation of energy.  An example of such a plot generated during a run of "validation.py" is shown:
