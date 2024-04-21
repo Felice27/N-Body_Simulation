@@ -88,8 +88,43 @@ This project is intended to be completed in Python with interactive Jupyter note
 - [X] Investigate ways to parallelize calculations (e.g. matrix operations)
 - [X] Make YAML / requirements.txt file for necessary Python environment to run code locally
 - [x] Implement animations for solutions of motion
-- [ ] Check solutions of motion against special cases of the 3 body problem
+- [x] Check solutions of motion against special cases of the 3 body problem
 - [X] Investigate scaleability improvements (e.g. NJIT, Cython)
 - [X] Convert to center-of-mass frame so that motion is visible at all times
 - [X] Check conservation of energy as an additional form of validation
 - [ ] (Bonus, if time permits) See if a neural network can predict stability of configurations
+
+## Notes on changes made for v1.1.0
+In response to feedback on my initial attempt, I have made a few changes to the program.  
+
+### Properly Implementing Softening
+The first was to properly implement the gravitational potential to be conservative: that is, for any interaction between two masses i and j, the contribution to potential energy is given by:
+
+$$
+U = -\frac{G m_i m_j}{\sqrt{r_{ij}^2 + \epsilon^2}}, \text{where } r_{ij} = ||\mathbf{r}_{ij}|| = ||\mathbf{r}_j - \mathbf{r}_i||
+$$
+As the force is the negative gradient of the potential, this means that the force on mass $i$ due to mass $j$ is given as follows:
+$$
+\mathbf{F}_{ij} = \frac{G m_i m_j \cdot \mathbf{r}_{ij}}{\left({r_{ij}^2 + \epsilon^2}\right)^{3/2}}
+$$
+This vector field is properly conservative and, given the right choices for $\epsilon$ and the time step $\Delta t$, will exhibit conservation of energy.  An example of such a plot generated during a run of "validation.py" is shown:
+![A plot with two subplots, one showing the kinetic and potential energy oscillating to conserve total energy, and one showing the relative error in energy vs time as an n-body simulation runs.  The relative error increases up to a maximum error, where it oscillates under that bound potential indefinitely.](/Figures/energy.png?raw=true "Energy Error Plot")
+The plot on the left shows the kinetic, potential, and total energy evolving over time, with the variations in kinetic and potential energy roughly cancelling out to keep the total energy constant.  On the plot of relative error in total energy vs time on the right, we can see that, as advertised, the Leapfrog solver is symplectic: even though the relative error in energy initially increases, it oscillates under a maximum envelope, never exceeding roughly $10^{-4}$ in magnitude.  
+
+### Validation: Known Behavior
+
+The file "validation.py" was created to create some plots showing the program simulate some systems with known behavior.  The file took about 3 minutes for my PC to run, with most of that time spent rendering the animations, but this varies greatly on a machine-to-machine basis; I may have accidentally run it on a full ASCEND node, which rendered the animations in less than a second.  3 validation cases are tested:
+
+Two masses orbiting their center of mass:
+
+![An animation displaying two identical masses orbiting their center of mass in a perfectly circular orbit.](/Figures/two_body.gif?raw=true "Two Masses in Circular Orbit")
+
+Three masses in an "Euler's triangle," forming the endpoints of a rotating equilateral triangle that circumscribes a circle:
+
+![An animation displaying three identical masses orbiting their center of mass in a perfectly circular orbit.](/Figures/euler.gif?raw=true "Three Masses in Circular Orbit")
+
+And finally, the most interesting case (at least to me): a stable, periodic solution first discovered in [Moore (1993)](https://journals.aps.org/prl/abstract/10.1103/PhysRevLett.70.3675) and later proven formally in [Chenciner and Montgomery (2000)](https://arxiv.org/abs/math/0011268).  3 identical masses start in a colinear configuration, but this is not the trivial colinear case first discovered by Euler (which is periodic but unstable); instead, the masses trace out a figure-eight in a stable solution, meaning that small perturbations return to this island of stability.
+
+![An animation displaying three identical masses in a stable figure-eight orbit.](/Figures/figure_eight.gif?raw=true "Three Masses in a Figure-Eight Orbit")
+
+With conservation of energy and these known configurations successfully demonstrated, the validity of the model has been affirmed.  I hope you enjoy using this program-- if, by some chance, you are some observer years in the future who stumbled across this repository, feel free to shoot me a message and let me know that you came across this project.  Happy simulating!

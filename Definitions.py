@@ -1,3 +1,15 @@
+"""
+File: Definitions.py
+
+Description: Contains the definitions of the classes and functions used in the N-Body Simulation.  This file is imported into the main file, n-body.py, to provide the necessary definitions for the simulation.  Allows for the main code to be more readable and concise.
+
+Author: Jack Felice     felice.27@osu.edu
+
+Revision History:
+    2024-04-19: Initial creation and upload to repository
+    2024-04-20: Added Version + Author Header; fixed gravitational potential to be properly conservative; added log-log plot of energy error now that error is expected to be reasonable.
+"""
+
 from numba import float64, int32
 from numba.experimental import jitclass
 import numpy as np
@@ -93,7 +105,7 @@ spec = {
     'N': int32,
     'T': float64[:],
     'eps': float64,
-}
+} # Numba, like most sensible programming languages, requires explicit typing.  This is the type signature for the CompiledOrbitSolver class.
 
 class OrbitSolver:
     """
@@ -174,9 +186,11 @@ class OrbitSolver:
         A = np.zeros((self.N, 2))
         for i in range(self.N):
             for j in range(i):
-                eff_distance_cubed = np.linalg.norm(R[j] - R[i])**3 + self.eps # speed up calculation
-                A[i] += self.G*self.M[j]*(R[j] - R[i])/(eff_distance_cubed)
-                A[j] += self.G*self.M[i]*(R[i] - R[j])/(eff_distance_cubed)
+                rvec = R[j] - R[i] # speed up calculation
+                denom = np.sqrt(np.linalg.norm(rvec)**2 + self.eps**2)
+                M_factor = self.G*rvec/(denom**3)
+                A[i] += M_factor*self.M[j] # Multiply by mass of other body
+                A[j] -= M_factor*self.M[i] # Mulitply by mass of the other body
         return A
     def potential_energy(self, R):
         """
@@ -185,7 +199,9 @@ class OrbitSolver:
         PE = 0
         for i in range(self.N):
             for j in range(i):
-                PE += -self.G*self.M[i]*self.M[j]/(np.linalg.norm(R[j] - R[i])+self.eps)
+                distance = np.linalg.norm(R[j] - R[i])
+                denom = np.sqrt(distance**2 + self.eps**2)
+                PE += -self.G*self.M[i]*self.M[j]/denom
         return PE 
    
     
@@ -272,9 +288,11 @@ class CompiledOrbitSolver:
         A = np.zeros((self.N, 2))
         for i in range(self.N):
             for j in range(i):
-                eff_distance_cubed = np.linalg.norm(R[j] - R[i])**3 + self.eps # speed up calculation
-                A[i] += self.G*self.M[j]*(R[j] - R[i])/(eff_distance_cubed)
-                A[j] += self.G*self.M[i]*(R[i] - R[j])/(eff_distance_cubed)
+                rvec = R[j] - R[i] # speed up calculation
+                denom = np.sqrt(np.linalg.norm(rvec)**2 + self.eps**2)
+                M_factor = self.G*rvec/(denom**3) # speed up calculation
+                A[i] += M_factor*self.M[j] # Multiply by mass of other body
+                A[j] -= M_factor*self.M[i] # Mulitply by mass of the other body
         return A
     def potential_energy(self, R):
         """
@@ -283,7 +301,9 @@ class CompiledOrbitSolver:
         PE = 0
         for i in range(self.N):
             for j in range(i):
-                PE += -self.G*self.M[i]*self.M[j]/(np.linalg.norm(R[j] - R[i])+self.eps)
+                distance = np.linalg.norm(R[j] - R[i])
+                denom = np.sqrt(distance**2 + self.eps**2)
+                PE += -self.G*self.M[i]*self.M[j]/denom
         return PE 
     
 
@@ -518,14 +538,25 @@ def make_plots(R, M, N, KE, PE, solver, dt, trails, show_animation, show_energy,
     # Ensure animation is hidden if show_animation is False
     if not show_animation:
         plt.close(fig1)
-    fig2, ax2 = plt.subplots()
+    fig2 = plt.figure(figsize=(14, 7))
+    ax2 = fig2.add_subplot(1, 2, 1)
     ax2.set_title("Energy vs. Time")
+    E = KE + PE
+    E0 = E[0] # Initial Energy
     ax2.plot(solver.T, KE, label='Kinetic Energy')
     ax2.plot(solver.T, PE, label='Potential Energy')
-    ax2.plot(solver.T, KE + PE, label='Total Energy')
+    ax2.plot(solver.T, E, label='Total Energy')
     ax2.set_xlabel('Time')
     ax2.set_ylabel('Energy')
     ax2.legend()
+    ax21 = fig2.add_subplot(1, 2, 2)
+    ax21.set_title("Energy Error vs. Time")
+    E_error = np.abs((E - E0)/(E+E0)) # Relative error
+    ax21.loglog(solver.T, E_error, label='Total Energy Error')
+    ax21.set_xlabel('Time')
+    ax21.set_ylabel('Relative Error')
+    ax21.legend()
+    fig2.tight_layout()
     if not show_energy:
         plt.close(fig2)
     if save_plots:

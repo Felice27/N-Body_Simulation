@@ -1,3 +1,17 @@
+"""
+File: n-body.py
+
+Description: Main file for the N-Body Simulation.  This file contains the main block of code that will be run when the program is executed.  It will prompt the user for input, generate random initial conditions, solve the equations of motion, and display the results in a series of plots and animations.
+
+Author: Jack Felice     felice.27@osu.edu
+
+Revision History:
+    2024-04-19: Initial creation and upload to repository
+    2024-04-20: Added Version + Author Header
+
+"""
+
+
 import numpy as np
 import matplotlib
 import matplotlib.pyplot as plt
@@ -38,7 +52,7 @@ if __name__ == '__main__': # Must be in the main block to allow for multiprocess
     seed = 42
 
     # Softening parameter
-    eps = 1e-2
+    eps = 2e-1 # Produces reasonable results for our initial parameters.  Can potentially be lowered when using smaller time steps or collisions are unlikely.
 
     # Maximum components for random mass, position, and velocity generation
     M_max = 1.0
@@ -130,7 +144,7 @@ if __name__ == '__main__': # Must be in the main block to allow for multiprocess
         else:
             print("Invalid choice. Please enter 0 or 1.")
 
-
+    solver = OrbitSolver(*class_args) # Reinitialize the solver to prevent issues with multithreading, as the compiled solver cannot be pickled (even though it's identical to the non-compiled solver).  I could potentially fix this by instead passing all the attributes of the solver to the function, but that would be a lot of work for little gain.
     if save_plots: # Allow the animation to be saved in parallel with the plots being shown, as the animation rendering takes the longest time (especially if compiled!)
         if num_threads >= 2:
             # Create and start the threads
