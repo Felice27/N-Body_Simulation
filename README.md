@@ -108,7 +108,9 @@ $$
 \mathbf{F}_{ij} = \frac{G m_i m_j \cdot \mathbf{r}_{ij}}{\left({r_{ij}^2 + \epsilon^2}\right)^{3/2}}
 $$
 This vector field is properly conservative and, given the right choices for $\epsilon$ and the time step $\Delta t$, will exhibit conservation of energy.  An example of such a plot generated during a run of "validation.py" is shown:
+
 ![A plot with two subplots, one showing the kinetic and potential energy oscillating to conserve total energy, and one showing the relative error in energy vs time as an n-body simulation runs.  The relative error increases up to a maximum error, where it oscillates under that bound potential indefinitely.](/Figures/energy.png?raw=true "Energy Error Plot")
+
 The plot on the left shows the kinetic, potential, and total energy evolving over time, with the variations in kinetic and potential energy roughly cancelling out to keep the total energy constant.  On the plot of relative error in total energy vs time on the right, we can see that, as advertised, the Leapfrog solver is symplectic: even though the relative error in energy initially increases, it oscillates under a maximum envelope, never exceeding roughly $10^{-4}$ in magnitude.  
 
 ### Validation: Known Behavior
